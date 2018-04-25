@@ -24,7 +24,7 @@ Planned features for upcoming versions:
 ---
 
 Format of the map file:
-* Region of a pixel is indexed through the value of the grayscale pixel, where the region index can be obtained by <value> / 10.
+* Region of a pixel is indexed through the value of the grayscale pixel, where the region index can be obtained by value / 10.
 * A value of 0 indicates that the region will not be recolored.
 * Each region has a sample point inside, signified by value 255. The color of the corresponding pixel in the texture will be mapped
 to the user-provided color for that region, and the pixels in the same region will be recolored based on this mapping. These sample
