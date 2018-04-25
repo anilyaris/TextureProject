@@ -18,6 +18,23 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\CLCode.h" />
+    <ClInclude Include="src\CLComponents.hpp" />
+    <ClInclude Include="src\CRC.hpp" />
+    <ClInclude Include="src\Deflate.hpp" />
+    <ClInclude Include="src\PNG.hpp" />
+    <ClInclude Include="src\Recolor.hpp" />
+    <ClInclude Include="src\util.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\CLComponents.cpp" />
+    <ClCompile Include="src\CRC.cpp" />
+    <ClCompile Include="src\Deflate.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\PNG.cpp" />
+    <ClCompile Include="src\Recolor.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{FF2BC570-3D49-4CCD-8939-E3BBC879C4F5}</ProjectGuid>
@@ -122,23 +139,6 @@
       <AdditionalLibraryDirectories>$(CUDA_LIB_PATH)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="CLComponents.cpp" />
-    <ClCompile Include="CRC.cpp" />
-    <ClCompile Include="Deflate.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="PNG.cpp" />
-    <ClCompile Include="Recolor.cpp" />
-    <ClCompile Include="Recolor.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="CLComponents.hpp" />
-    <ClInclude Include="CLCode.h" />
-    <ClInclude Include="CRC.hpp" />
-    <ClInclude Include="Deflate.hpp" />
-    <ClInclude Include="PNG.hpp" />
-    <ClInclude Include="util.hpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
