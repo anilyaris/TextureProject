@@ -4,8 +4,14 @@ Recoloring of a texture file based on a map file that splits the image into regi
 Example run of the provided main function:
 
 ```cmd
-textureProject.exe <texture_path> <map_path> <output_path> <num_regions>
+textureProject.exe <texture_path> <output_path> <map_info>
 ```
+where ```<map_info>``` is one of the following:
+* The path of a map file.
+* A string of sample coordinates (e.g. "10 20 30 40" indicates sample points (10, 20) and (30, 40) where the first element of each point 
+indicates its vertical coordinate from top and the second indicates the horizontal coordinate from left)
+* Number of regions to be recolored.
+
 The texture file should be a 24-bit-per-pixel RGB image and the map file should be a grayscale image. Currently, compression
 of the output file is not supported.
 
@@ -18,7 +24,7 @@ OpenCL must be installed and VS must be correctly configured in order to build t
 Planned features for upcoming versions:
 * A GUI for the application that supports bulk recoloring of multiple textures
 * Option to preview the texture on its corresponding model.
-* Generating the map file by some specific algortihm rather than having the user make it themselves by hand.
+* ~~Generating the map file by some specific algortihm rather than having the user make it themselves by hand.~~ Implemented by k-means clustering, accuracy is still weak compared to inputting a map file.
 * PNG compression for writing the output file.
 
 ---
