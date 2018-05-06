@@ -250,3 +250,88 @@ void kernel recolor(global const unsigned char* texture, global const unsigned c
 )"
 
 #define RECOLOR_LEN 3363
+
+#define KMEANS_CODE R"(
+
+void kernel kmeans(global const unsigned char* texture, global unsigned char* map, global double8* samples, global const double* weight) {
+
+	unsigned int pixel = get_global_id(0) * get_global_size(1) + get_global_id(1);
+	bool black = texture[3 * pixel] == 0 && texture[3 * pixel + 1] == 0 && texture[3 * pixel + 2] == 0;
+	unsigned char reg = samples[0].s5;
+
+	if (black) map[pixel] = 0;
+	else {
+
+		double minVal;
+		char minInd = 0;
+
+		for (char i = 0; i < reg; i++) {
+
+			double rdiff = *weight * texture[3 * pixel] - samples[i].s0;
+			double gdiff = *weight * texture[3 * pixel + 1] - samples[i].s1;
+			double bdiff = *weight * texture[3 * pixel + 2] - samples[i].s2;
+			double hdiff = get_global_id(0) - samples[i].s3;
+			double wdiff = get_global_id(1) - samples[i].s4;
+
+			double val = rdiff * rdiff + gdiff * gdiff + bdiff * bdiff + hdiff * hdiff + wdiff * wdiff;
+			if (i == 0) minVal = val;
+			else if (val < minVal) {
+
+				minVal = val;
+				minInd = i;
+
+			}		
+
+		}
+
+		map[pixel] = 10 * (minInd + 1);
+
+	}
+
+}
+
+)"
+
+#define KMEANS_LEN 1016
+
+#define NEWMEANS_CODE R"(
+
+#pragma OPENCL EXTENSION cl_khr_fp64: enable
+#pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
+
+void AtomicAdd(global double *val, double delta) {
+
+	union {
+		double f;
+        ulong i;
+	} old;
+
+	union {
+        double f;
+        ulong i;
+	} new;
+
+	do {
+		old.f = *val;
+        new.f = old.f + delta;
+	} while (atom_cmpxchg ( (volatile global ulong *)val, old.i, new.i) != old.i);
+
+}
+
+void kernel newmeans(global const unsigned char* texture, global unsigned char* map, global double8* samples, global const double* weight) {
+
+	unsigned int pixel = get_global_id(0) * get_global_size(1) + get_global_id(1);
+	unsigned char reg = map[pixel] / 10 - 1;
+
+	AtomicAdd((global double*)(samples + reg), *weight * texture[3 * pixel]);
+	AtomicAdd(((global double*)(samples + reg) + 1), *weight * texture[3 * pixel + 1]);
+	AtomicAdd(((global double*)(samples + reg) + 2), *weight * texture[3 * pixel + 2]);
+	AtomicAdd(((global double*)(samples + reg) + 3), get_global_id(0));
+	AtomicAdd(((global double*)(samples + reg) + 4), get_global_id(1));
+	AtomicAdd(((global double*)(samples + reg) + 7), 1.0);
+
+}
+
+)"
+
+#define NEWMEANS_LEN 1105

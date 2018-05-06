@@ -51,17 +51,20 @@ class Recolor {
 
 		PNG_RW texture, map;
 		vector<ColorRGB> colors;
+		unsigned int reg;
 		bool antialias;
+		cl_double weight;
 
 		CLComponents& cl;
 
 		void mapParse(vector<Coord>& samples, vector<Border>& borders, cl::Buffer& buffer_map);
+		void kmeans(cl::Buffer& buffer_texture, cl::Buffer& buffer_map, vector<Coord>& samples, cl_uchar& mode);
 
 	public:
 
-		Recolor(CLComponents& clc, bool typ = true) : cl(clc), antialias(typ) {}
+		Recolor(CLComponents& clc, unsigned int r, cl_double w = -1.0, bool typ = true) : cl(clc), reg(r), weight(w), antialias(typ) {}
 		void setColors(vector<ColorRGB>& clrs);
 
-		void recolor(string texturePath, string mapPath, string outPath);
+		void recolor(string texturePath, string outPath, string mapInfo);
 		
 };

@@ -112,3 +112,12 @@ inline unsigned long adler32(vector<uint8_t>& zlib, int len) {
 	return (s2 << 16) + s1;
 
 }
+
+//Finds number of spaces in string.
+inline unsigned int find_spaces(string s) {
+
+	unsigned int val = 0;
+	for (char c : s) if (c == ' ') val++;
+	return val;
+
+}
