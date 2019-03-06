@@ -4,12 +4,12 @@
 using std::string;
 
 //Gets the GPU information that will be used for building OpenCL programs.
-void CLComponents::init() {
+CLComponents::CLComponents() {
 
 	//get all platforms (drivers)
 	std::vector<cl::Platform> all_platforms;
 	cl::Platform::get(&all_platforms);
-	if (all_platforms.size() == 0) throw string("No platforms found. Check OpenCL installation!");
+	if (all_platforms.size() == 0) throw string("OpenCL error: No platforms found. Check OpenCL installation!");
 
 	cl::Platform default_platform = all_platforms[0];
 	string platformName = default_platform.getInfo<CL_PLATFORM_NAME>();
@@ -19,7 +19,7 @@ void CLComponents::init() {
 	//get default device of the default platform
 	std::vector<cl::Device> all_devices;
 	default_platform.getDevices(CL_DEVICE_TYPE_ALL, &all_devices);
-	if (all_devices.size() == 0) throw string("No devices found. Check OpenCL installation!");
+	if (all_devices.size() == 0) throw string("OpenCL error: No devices found. Check OpenCL installation!");
 
 	default_device = all_devices[0];
 	//std::cout << "Using device: " << default_device.getInfo<CL_DEVICE_NAME>() << "\n";
@@ -38,6 +38,6 @@ void CLComponents::build(const char* code, size_t len) {
 	sources.push_back({ code, len });
 
 	program = cl::Program(context, sources);
-	if (program.build({ default_device }) != CL_SUCCESS) throw string("Error building: " + program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(default_device));
+	if (program.build({ default_device }) != CL_SUCCESS) throw "OpenCL error\nError building " + program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(default_device);
 
 }

@@ -8,9 +8,11 @@
 #include "PNG.hpp"
 #include "CLComponents.hpp"
 #include "util.hpp"
+#include <DirectXTex.h>
 
 using std::string;
 using std::vector;
+using std::pair;
 
 struct ColorHSV;
 
@@ -28,6 +30,8 @@ struct ColorRGB {
 	cl_short3 operator+(ColorRGB& rhs);
 	cl_short3 operator-(ColorRGB& rhs);
 
+	uint8_t findMaxDifference();
+
 };
 
 struct ColorHSV {
@@ -42,7 +46,18 @@ struct ColorHSV {
 
 };
 
-typedef cl_uint2 Coord;
+template <typename vec3_t>
+struct diffItem {
+
+	vec3_t diff;
+	bool calculated = false;
+
+};
+
+typedef diffItem<cl_short3> rgbDiff;
+typedef diffItem<cl_double3> hsvDiff;
+
+typedef cl_uint2 Coord;	//height, width (y,x)
 typedef cl_uint3 Border;
 
 class Recolor {
@@ -50,21 +65,38 @@ class Recolor {
 	private:
 
 		PNG_RW texture, map;
+		string bin;
+		cl::Buffer buffer_map;
+		vector<Coord> samples;
+		vector<Border> borders;
+
+		vector<diffItem<cl_short3>> rgb_diffs;
+		vector<diffItem<cl_double3>> hsv_diffs;
+		bool diffs_set;
+
 		vector<ColorRGB> colors;
-		unsigned int reg;
+		unsigned char reg;
 		bool antialias;
 		cl_double weight;
+		cl_uchar eyeRegion = 26;
 
 		CLComponents& cl;
+		ID3D11Device* device = nullptr;
+		ID3D11DeviceContext* context = nullptr;
 
-		void mapParse(vector<Coord>& samples, vector<Border>& borders, cl::Buffer& buffer_map);
-		void kmeans(cl::Buffer& buffer_texture, cl::Buffer& buffer_map, vector<Coord>& samples, cl_uchar& mode);
+		void mapParse();
+		void kmeans(cl::Buffer& buffer_texture, cl_uchar& mode);
 
 	public:
 
-		Recolor(CLComponents& clc, unsigned int r, cl_double w = -1.0, bool typ = true) : cl(clc), reg(r), weight(w), antialias(typ) {}
-		void setColors(vector<ColorRGB>& clrs);
-
-		void recolor(string texturePath, string outPath, string mapInfo);
+		Recolor(CLComponents& clc, unsigned char r = 25, cl_double w = -1.0, bool typ = true) : cl(clc), reg(r), weight(w), antialias(typ), rgb_diffs(r, { 0, 0, 0 }), hsv_diffs(r, { 0.0, 0.0, 0.0 }), diffs_set(false) {}
+		void setColors(const vector<ColorRGB>& clrs);		
+		void setBin(const string& path);
 		
+		pair<vector<rgbDiff>&, vector<hsvDiff>&> getDiffs();
+		void setDiffs(const vector<rgbDiff>& rgbdiffs, const vector<hsvDiff>& hsvdiffs);
+		void resetDiffs();
+
+		void recolor(const string& texturePath, const string& outPath, const string& mapInfo, const texDataInfo& textureBinData, const string& pmPath = "", uint8_t eyeIrisIdentifier = false);
+				
 };

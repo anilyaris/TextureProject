@@ -127,7 +127,8 @@ void Deflate::huffman(Entry* begin, unsigned int length, HuffmanTree& tree) cons
 	
 	int code = 0;
 	int MAX_BITS = bl_count.size();
-	int* next_code = new int[MAX_BITS];	
+	int* next_code = new int[MAX_BITS];
+	next_code[0] = 0;
 	
     bl_count[0] = 0;    
     for (int bits = 1; bits < MAX_BITS; bits++) {
@@ -202,7 +203,7 @@ void Deflate::decompress(vector<uint8_t>& zlib, vector<uint8_t>& decompressed) {
 			uint16_t NLEN = readBits(zlib, 8, pos);
 			NLEN ^= readBits(zlib, 8, pos) << 8;
 			
-			if (LEN ^ NLEN != 0xffff) throw string("Decompression error: Invalid input format.");
+			if ((unsigned int)(LEN ^ NLEN) != 0xffff) throw string("Decompression error: Invalid input format.");
 			
 			unsigned int index = pos >> 3;
 			decompressed.insert(decompressed.end(), zlib.begin() + index, zlib.begin() + index + LEN);
@@ -220,11 +221,11 @@ void Deflate::decompress(vector<uint8_t>& zlib, vector<uint8_t>& decompressed) {
 				uint16_t HLIT = readBits(zlib, 5, pos) + 257;
 				uint8_t HDIST = readBits(zlib, 5, pos) + 1;
 				uint8_t HCLEN = readBits(zlib, 4, pos) + 4;
-				
+
+				for (int i = 0; i < 19; i++) std_dynamic[i].extra &= 0xF0;				
 				for (int i = 0; i < HCLEN; i++) {
 					
-					uint8_t codeLen = readBits(zlib, 3, pos);
-					std_dynamic[dyn_order[i]].extra &= 0xF0;
+					uint8_t codeLen = readBits(zlib, 3, pos);					
 					std_dynamic[dyn_order[i]].extra ^= codeLen;
 					
 				}

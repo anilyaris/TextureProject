@@ -17,7 +17,6 @@ void mn(string texturePath, string outPath, string mapInfo, char numRegions) {
 		srand(time(NULL));
 
 		CLComponents cl;
-		cl.init();
 		Recolor recolor(cl, numRegions, WEIGHT);
 
 		while (numRegions-- > 0) colors.push_back(ColorRGB(RAND, RAND, RAND));

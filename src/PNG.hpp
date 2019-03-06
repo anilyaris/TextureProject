@@ -42,6 +42,7 @@ class PNG_RW {
 	
 	private:
 		
+		string fileName;
 		uint32_t width, height;
 		uint8_t depth, color, comp, filt, ilace;
 		
@@ -66,8 +67,9 @@ class PNG_RW {
 		~PNG_RW();
 		
 		void read(string fullPath);
-		void write(string fullPath) const;
+		void write(string fullPath);
 		
+		string getName() const;
 		uint8_t* getImage() const;
 		uint32_t getWidth() const;
 		uint32_t getHeight() const;

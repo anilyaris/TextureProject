@@ -10,7 +10,7 @@ struct CLComponents {
 	cl::Context context;
 	cl::Device default_device;
 
-	void init();
+	CLComponents();
 	void build(const char* code, size_t len);
 
 };

@@ -9,6 +9,7 @@
 #include "PNG.hpp"
 #include "Deflate.hpp"
 #include "util.hpp"
+#include "lodepng.h"
 
 using std::move;
 using std::copy;
@@ -110,6 +111,7 @@ void PNG_RW::read(string fullPath) {
 
 	try {
 
+		fileName = fullPath;
 		char* buffer = acquire(fullPath);
 		int fileSize = width;
 
@@ -133,9 +135,9 @@ void PNG_RW::read(string fullPath) {
 }
 
 //Writes a PNG file to the given path.
-void PNG_RW::write(string fullPath) const {
+void PNG_RW::write(string fullPath) {
 
-	try {
+	/*try {
 
 		vector<uint8_t> filtered;
 		filter(filtered);
@@ -150,7 +152,11 @@ void PNG_RW::write(string fullPath) const {
 
 		throw;
 
-	}
+	}*/
+
+	LodePNGColorType colorType = LCT_RGBA;
+	if (color == 3) colorType = LCT_RGB;
+	lodepng::encode(fullPath, image, width, height, colorType);
 
 }
 
@@ -173,7 +179,7 @@ char* PNG_RW::acquire(string fullPath) {
 
 	}
 
-	else throw string("File not found.");
+	else throw fullPath + "File not found.";
 
 }
 
@@ -221,6 +227,12 @@ PNG_RW::~PNG_RW() {
 	
 }
 
+string PNG_RW::getName() const {
+
+	return fileName;
+
+}
+
 uint8_t* PNG_RW::getImage() const {
 	
 	return image;
@@ -254,7 +266,7 @@ void PNG_RW::parse(char*& buffer, int fileSize, vector<uint8_t>& zlib) {
 	chunks.clear();
 	
 	char signature[8] = {137, 80, 78, 71, 13, 10, 26, 10};
-	if (!equal(signature, signature + 8, buffer)) throw string("Invalid PNG file: Signature not found.");
+	if (!equal(signature, signature + 8, buffer)) throw fileName + "-> Invalid PNG file: Signature not found.";
 		
 	int pos = 8;
 	
@@ -266,11 +278,11 @@ void PNG_RW::parse(char*& buffer, int fileSize, vector<uint8_t>& zlib) {
 		uint32_t chunkLength = chunk.getLength();
 		
 		if (!IHDR_flag) IHDR_flag = (chunkType == "IHDR");
-		if (!IHDR_flag) throw string("Invalid PNG file: Data found before header.");
+		if (!IHDR_flag) throw fileName + "-> Invalid PNG file: Data found before header.";
 		
 		if (chunkType == "IHDR") {
 			
-			if (chunkLength != 13) throw string("Invalid PNG file: Header has wrong format.");
+			if (chunkLength != 13) throw fileName + "-> Invalid PNG file: Header has wrong format.";
 			
 			width = bytesTo32(chunkData);
 			height = bytesTo32(chunkData + 4);
@@ -280,18 +292,18 @@ void PNG_RW::parse(char*& buffer, int fileSize, vector<uint8_t>& zlib) {
 			filt = chunkData[11];
 			ilace = chunkData[12];
 			
-			if (color != 0 && color != 2 /*&& color != 3 && color != 4*/ && color != 6) throw string("Invalid PNG file: Color type not allowed or supported.");
-			if (depth != 8) throw string("Invalid PNG file: Bit depth not allowed or supported.");							
+			if (color != 0 && color != 2 /*&& color != 3 && color != 4*/ && color != 6) throw fileName + "-> Invalid PNG file: Color type not allowed or supported.";
+			if (depth != 8) throw fileName + "-> Invalid PNG file: Bit depth not allowed or supported.";
 			/*else if (color == 3) {				
-				if (depth != 1 && depth != 2 && depth != 4 && depth != 8) throw string("Invalid PNG file: Bit depth not allowed for color type.");								
+				if (depth != 1 && depth != 2 && depth != 4 && depth != 8) throw fileName + "-> Invalid PNG file: Bit depth not allowed for color type.";								
 			}			
 			else if (color == 4) {				
-				if (depth != 8 && depth != 16) throw string("Invalid PNG file: Bit depth not allowed for color type.");			
+				if (depth != 8 && depth != 16) throw fileName + "-> Invalid PNG file: Bit depth not allowed for color type.";			
 			}		
 			else if (color == 6) {				
-				if (depth != 8 && depth != 16) throw string("Invalid PNG file: Bit depth not allowed for color type.");								
+				if (depth != 8 && depth != 16) throw fileName + "-> Invalid PNG file: Bit depth not allowed for color type.";								
 			}*/			
-			if (comp != 0 || filt != 0 || ilace != 0) throw string("Invalid PNG file: Invalid compression/filtering/interlace method.");
+			if (comp != 0 || filt != 0 || ilace != 0) throw fileName + "-> Invalid PNG file: Invalid compression/filtering/interlace method.";
 
 			color = (10 * color + 8 - color * color) / 8;
 			
@@ -300,7 +312,7 @@ void PNG_RW::parse(char*& buffer, int fileSize, vector<uint8_t>& zlib) {
 		else if (chunkType == "IDAT") {
 			
 			if (IDAT_state == 0) IDAT_state++;
-			else if (IDAT_state == 2) throw string("Invalid PNG file: Data is not consecutive");	
+			else if (IDAT_state == 2) throw fileName + "-> Invalid PNG file: Data is not consecutive";
 			
 			zlib.insert(zlib.end(), chunkData, chunkData + chunkLength);
 			
@@ -309,7 +321,7 @@ void PNG_RW::parse(char*& buffer, int fileSize, vector<uint8_t>& zlib) {
 		else if (chunkType == "IEND") {
 			
 			IEND_flag = true;
-			if (chunkLength != 0) throw string("Invalid PNG file: Footer has wrong format.");
+			if (chunkLength != 0) throw fileName + "-> Invalid PNG file: Footer has wrong format.";
 			
 		}
 		
@@ -320,17 +332,17 @@ void PNG_RW::parse(char*& buffer, int fileSize, vector<uint8_t>& zlib) {
 		
 	} while (pos < fileSize && !IEND_flag);
 	
-	if (!IHDR_flag) throw string("Invalid PNG file: No header found.");
-	if (!IEND_flag) throw string("Invalid PNG file: No footer found.");
-	if (IDAT_state == 0) throw string("Invalid PNG file: No data found.");
-	if (pos != fileSize) throw string("Invalid PNG file: Data found after footer.");
+	if (!IHDR_flag) throw fileName + "-> Invalid PNG file: No header found.";
+	if (!IEND_flag) throw fileName + "-> Invalid PNG file: No footer found.";
+	if (IDAT_state == 0) throw fileName + "-> Invalid PNG file: No data found.";
+	if (pos != fileSize) throw fileName + "-> Invalid PNG file: Data found after footer.";
 
 }
 
 //Performs filtering on the output PNG buffer.
 void PNG_RW::filter(vector<uint8_t>& data) const {
 
-	if (image == NULL) throw string("No image to write.");
+	if (image == NULL) throw fileName + "-> No image to write.";
 
 	for (int i = 0; i < height; i++) {
 
@@ -370,7 +382,7 @@ void PNG_RW::filter(vector<uint8_t>& data) const {
 						break;
 					
 					default:
-						throw string("Invalid PNG file: Invalid filter type.");
+						throw fileName + "Invalid PNG file: Invalid filter type.";
 
 				}				
 
@@ -426,7 +438,7 @@ void PNG_RW::reconstruct(vector<uint8_t>& data) {
 					break;
 
 				default:
-					throw string("Invalid PNG file: Invalid filter type.");
+					throw fileName + "Invalid PNG file: Invalid filter type.";
 
 				}
 

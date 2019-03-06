@@ -11,6 +11,7 @@
 
 #define RAND -1
 
+using std::ifstream;
 using std::string;
 using std::vector;
 
@@ -41,6 +42,18 @@ inline void _32ToBytes(uint32_t val, uint8_t* bytes) {
 		
 	}	
 	
+}
+
+//Splits a 32-bit word into 4 bytes, little endian.
+inline void L32ToBytes(uint32_t val, uint8_t* bytes) {
+
+	for (int i = 0; i < 4; i++) {
+
+		*(bytes + i) = val & (uint8_t)0xFF;
+		val >>= 8;
+
+	}
+
 }
 
 //Checks whether the ZLIB buffer is valid.
@@ -119,5 +132,119 @@ inline unsigned int find_spaces(string s) {
 	unsigned int val = 0;
 	for (char c : s) if (c == ' ') val++;
 	return val;
+
+}
+
+inline string pngToRaw(string s) {
+
+	s[s.size() - 3] = 'r';
+	s[s.size() - 2] = 'a';
+	s[s.size() - 1] = 'w';
+	return s;
+
+}
+
+typedef struct {
+
+	unsigned int pos;
+	unsigned int width;
+	unsigned int height;
+	unsigned char format;
+	unsigned int size() const { return width * height * format; }
+
+} texDataInfo;
+
+inline texDataInfo findTextureInBin(string texName, string binPath) {
+
+	if (binPath.length() != 0) {
+
+		ifstream bin(binPath, ifstream::binary);
+		bin.seekg(2);
+		unsigned int numTextures = bin.get();
+		numTextures += bin.get() * 256;
+		while (numTextures > 0) {
+
+			bin.seekg(4 * numTextures--);
+			unsigned int pos = bin.get();
+			pos += bin.get() * 256;
+			pos += bin.get() * 256 * 256;
+			pos += bin.get() * 256 * 256 * 256;
+
+			bin.seekg(pos + 0x28);
+			char name[0x40];
+			bin.read(name, 0x40);
+
+			if (string(name) == texName) {
+
+				unsigned int w = bin.get();
+				w += bin.get() * 256;
+				unsigned int h = bin.get();
+				h += bin.get() * 256;
+				unsigned char fmt = bin.get();
+				return { pos + 0x80, w, h, fmt };
+
+			}
+
+		}
+
+	}
+	return { 0, 0, 0, 0 };
+
+}
+
+inline void formatTextureBuffer(uint8_t* origBuf, unsigned char* newBuf, const texDataInfo& textureBinData) {
+
+	static int tileOrder[] = { 0, 1, 8, 9, 2, 3, 10, 11, 16, 17, 24, 25, 18, 19, 26, 27, 4, 5, 12, 13, 6, 7, 14, 15, 20, 21, 28, 29, 22, 23, 30, 31, 32, 33, 40, 41, 34, 35, 42, 43, 48, 49, 56, 57, 50, 51, 58, 59, 36, 37, 44, 45, 38, 39, 46, 47, 52, 53, 60, 61, 54, 55, 62, 63 };
+	unsigned int outputOffset = 0;
+	for (int tY = 0; tY < textureBinData.height / 8; tY++)
+	{
+		for (int tX = 0; tX < textureBinData.width / 8; tX++)
+		{
+			for (int pixel = 0; pixel < 64; pixel++)
+			{
+				int x = tileOrder[pixel] % 8;
+				int y = (tileOrder[pixel] - x) / 8;
+				long dataOffset = ((tY * 8 + y) * textureBinData.width + tX * 8 + x) * 4;
+				
+				if (textureBinData.format != 2)	{
+
+					if (textureBinData.format == 4) newBuf[outputOffset++] = origBuf[dataOffset + 3];
+					newBuf[outputOffset++] = origBuf[dataOffset + 2];
+					newBuf[outputOffset++] = origBuf[dataOffset + 1];
+					newBuf[outputOffset++] = origBuf[dataOffset];
+
+				}
+
+				else {
+
+					unsigned char r = origBuf[dataOffset], g = origBuf[dataOffset + 1], b = origBuf[dataOffset + 2];
+					newBuf[outputOffset++] = ((g & 0x1c) << 3) | ((b & 0xf8) >> 3);					
+					newBuf[outputOffset++] = (r & 0xf8) | ((g & 0xe0) >> 5);
+
+				}
+				
+			}
+		}
+	}
+
+}
+
+inline size_t find_nth_of(const string& str, char c, size_t n) {
+
+	size_t pos = 0, len = str.size(), num = 0;
+	for (pos; pos < len; pos++) {
+
+		if (str[pos] == c) num++;
+		if (num == n) return pos;
+
+	}
+
+	return string::npos;
+
+}
+
+inline bool isNumeric(char c) {
+
+	return '0' <= c && c <= '9';
 
 }
